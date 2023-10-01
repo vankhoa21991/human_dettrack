@@ -3,3 +3,8 @@
 
 # Ada Library Information
 *.ali
+*.mp4
+.idea
+models
+data
+__pycache__
