@@ -5,7 +5,7 @@ scale_percent: 100
 # model confidence level
 conf_level: 0.8
 # Threshold of centers ( old\new)
-thr_centers: 20
+thr_centers: 80
 #Number of max frames to consider a object lost
 frame_max: 5
 # Number of max tracked centers stored
