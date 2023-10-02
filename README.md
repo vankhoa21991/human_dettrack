@@ -42,7 +42,7 @@ This personal project focuses on human detection and tracking using computer vis
 2. Run the Application:
    
   ```shell
-  python main.py
+  python run_tracker_simple.py
   ```
 
 3. View Output: The application will display the video stream with bounding boxes around detected humans and tracking paths (if enabled).
