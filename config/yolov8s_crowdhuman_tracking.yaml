@@ -1,0 +1,21 @@
+#Verbose during prediction
+verbose: False
+# Scaling percentage of original frame
+scale_percent: 100
+# model confidence level
+conf_level: 0.8
+# Threshold of centers ( old\new)
+thr_centers: 80
+#Number of max frames to consider a object lost
+frame_max: 5
+# Number of max tracked centers stored
+patience: 100
+# ROI area color transparency
+alpha: 0.1
+
+img_size: 608
+class_ids: [0,1]
+
+# detector
+model: "runs/detect/yolov8s_crowdhuman/weights/best.pt"
+

@@ -48,10 +48,8 @@ def main(args, cfg, verbose=False):
         # Applying resizing of read frame
         frame = risize_frame(frame, scale_percent)
 
-        ROI = frame
-
         # Getting predictions
-        y_hat = detector.detect(ROI)
+        y_hat = detector.detect(frame)
 
         # Getting the bounding boxes, confidence and classes of the recognize objects in the current frame.
         conf = y_hat[0].boxes.conf.cpu().numpy()
@@ -74,20 +72,12 @@ def main(args, cfg, verbose=False):
             # Updating people in roi
             count_p += is_new
 
-            # drawing center and bounding-box in the given frame
-            cv2.rectangle(ROI, (xmin, ymin), (xmax, ymax), (0, 0, 255), 2)  # box
-            for center_x, center_y in centers_old[id_obj].values():
-                cv2.circle(ROI, (center_x, center_y), 5, (0, 0, 255), -1)  # center of box
+            video.draw_box_and_text(frame, (xmin, ymin, xmax, ymax), conf[ix], detector.dict_classes[category], id_obj, centers_old)
 
-            # Drawing above the bounding-box the name of class recognized.
-            cv2.putText(img=ROI, text=id_obj + ':' + str(np.round(conf[ix], 2)) + ' ' + str(detector.dict_classes[category]),
-                        org=(xmin, ymin - 10), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=0.8, color=(0, 0, 255),
-                        thickness=1)
-
-        # drawing the number of people
-        cv2.putText(img=frame, text=f'Counts People in ROI: {count_p}',
-                    org=(30, 40), fontFace=cv2.FONT_HERSHEY_TRIPLEX,
-                    fontScale=1, color=(255, 0, 0), thickness=1)
+        # # drawing the number of people
+        # cv2.putText(img=frame, text=f'Counts People in ROI: {count_p}',
+        #             org=(30, 40), fontFace=cv2.FONT_HERSHEY_TRIPLEX,
+        #             fontScale=1, color=(255, 0, 0), thickness=1)
 
         # Filtering tracks history
         centers_old = tracker.filter_tracks(centers_old, patience)
@@ -102,8 +92,7 @@ def main(args, cfg, verbose=False):
             break
 
     # Releasing the video
-    writer.release()
-    cv2.destroyAllWindows()
+    video.stop()
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser()

@@ -1,0 +1,14 @@
+#Verbose during prediction
+verbose: False
+
+img_size: 608
+epochs: 50
+batch_size: 8
+
+# for training
+mode: 'train' # 'train' or 'train resume'
+data: "/home/vankhoa/datasets/CrowdHuman/crowdhuman/crowdhuman.yaml"
+output: "yolov8s_crowdhuman"
+model: "runs/detect/yolov8s_crowdhuman/weights/best.pt"
+resume: "runs/detect/yolov8s_crowdhuman/weights/best.pt"
+

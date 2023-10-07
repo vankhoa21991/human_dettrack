@@ -7,7 +7,7 @@ class detectorYoloV8():
 
         # geting names from classes
         self.dict_classes = self.model.model.names
-        self.class_IDS = [0] # only person
+        self.class_IDS = cfg['class_ids']
         self.conf_level = cfg['conf_level']
 
     def detect(self, ROI):

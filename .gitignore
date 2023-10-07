@@ -7,4 +7,5 @@
 .idea
 models
 data
+runs
 __pycache__
