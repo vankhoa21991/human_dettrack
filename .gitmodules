@@ -1,0 +1,3 @@
+[submodule "dettrack/utils/TrackEval"]
+	path = dettrack/utils/TrackEval
+	url = https://github.com/JonathonLuiten/TrackEval
