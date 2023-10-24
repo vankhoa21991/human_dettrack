@@ -9,3 +9,4 @@ models
 data
 runs
 __pycache__
+*.pt
