@@ -8,8 +8,7 @@ import torch
 
 from boxmot import TRACKERS
 from boxmot.tracker_zoo import create_tracker
-from boxmot.utils import ROOT, WEIGHTS
-from boxmot.utils.checks import TestRequirements
+from boxmot.utils import ROOT
 from examples.detectors import get_yolo_inferer
 
 from ultralytics import YOLO
@@ -135,11 +134,11 @@ def run(args):
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--yolo-model', type=Path, default=WEIGHTS / 'yolov8n',
+    parser.add_argument('--yolo-model', type=Path, default=Path('weights') / 'yolov8n',
                         help='yolo model path')
-    parser.add_argument('--reid-model', type=Path, default=WEIGHTS / 'osnet_x0_25_msmt17.pt',
+    parser.add_argument('--reid-model', type=Path, default=Path('weights') / 'osnet_x0_25_msmt17.pt',
                         help='reid model path')
-    parser.add_argument('--tracking-method', type=str, default='deepocsort',
+    parser.add_argument('--tracking-method', type=str, default='ocsort',
                         help='deepocsort, botsort, strongsort, ocsort, bytetrack')
     parser.add_argument('--source', type=str, default='0',
                         help='file/dir/URL/glob, 0 for webcam')
@@ -158,7 +157,7 @@ def parse_opt():
     # class 0 is person, 1 is bycicle, 2 is car... 79 is oven
     parser.add_argument('--classes', nargs='+', type=int,
                         help='filter by class: --classes 0, or --classes 0 2 3')
-    parser.add_argument('--project', default=ROOT / 'runs' / 'track',
+    parser.add_argument('--project', default= Path('runs') / 'track',
                         help='save results to project/name')
     parser.add_argument('--name', default='exp',
                         help='save results to project/name')

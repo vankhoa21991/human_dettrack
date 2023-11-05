@@ -16,7 +16,6 @@ from ultralytics.utils.checks import print_args
 from pathlib import Path
 from dettrack.tracking.evaluator import Evaluator
 
-
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument('--data_path', type=str, help='path to dataset')

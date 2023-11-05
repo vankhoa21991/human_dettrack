@@ -42,12 +42,12 @@ class CocoToYoloCrowdHuman():
     def prepare_images(self):
         print("Preparing images...")
         for img in tqdm(self.data['images']):
+            filename = img['file_name']
+
             if os.path.exists(self.image_path / self.make_filename(img['file_name'])):
+                self.file_names.append(filename)
                 continue
 
-            filename = img['file_name']
-            # shutil.copy(self.path_to_images / filename, self.image_path / filename.split("/")[-1])
-            # create ln
             os.symlink(self.path_to_images / filename, self.image_path / self.make_filename(filename))
             self.file_names.append(filename)
         print("Done!")
@@ -146,8 +146,8 @@ class CocoToYoloCrowdHuman():
             yaml.dump(data, f)
 
 class CocoToYoloMOT(CocoToYoloCrowdHuman):
-    def __init__(self, data_path: Path, out_path: Path=None, split="val", image_path=None):
-        super().__init__(data_path, out_path, split, image_path)
+    def __init__(self, data_path: Path, out_path: Path=None, split="val", image_path=None, num_workers=8):
+        super().__init__(data_path, out_path, split, image_path, num_workers)
     def make_filename(self, filename):
         return filename.replace("/", '_')
 
@@ -168,12 +168,13 @@ if __name__ == '__main__':
     args.add_argument('--image_path', type=str, default=None)
     args.add_argument('--split', nargs='+', default=["val", "train"])
     args.add_argument('--dataset', type=str, default="crowdhuman", help="crowdhuman or mot")
+    args.add_argument('-np','--num_workers', type=int, default=8)
     args = args.parse_args()
 
     if args.dataset == "crowdhuman":
-        coco_to_yolo = CocoToYoloCrowdHuman(Path(args.data_path), split=args.split)
+        coco_to_yolo = CocoToYoloCrowdHuman(Path(args.data_path), split=args.split, num_workers=args.num_workers)
     elif args.dataset == "mot":
-        coco_to_yolo = CocoToYoloMOT(Path(args.data_path), split=args.split, image_path=args.image_path)
+        coco_to_yolo = CocoToYoloMOT(Path(args.data_path), split=args.split, image_path=args.image_path, num_workers=args.num_workers)
     else:
         raise NotImplementedError
     coco_to_yolo.run()

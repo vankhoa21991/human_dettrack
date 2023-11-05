@@ -19,15 +19,15 @@ This personal project focuses on human detection and tracking using computer vis
 1. **Clone the repository:**
 
 ```shell
- git clone https://github.com/yourusername/human-detection-tracking.git
- cd human-detection-tracking
+ git clone https://github.com/vankhoa21991/human-dettrack.git
+ cd human_dettrack
 ```
 
 4. **Create a virtual environment (optional but recommended):**
 
 ```shell
 python -m venv venv
-source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+source venv/bin/activate 
 ```
 
 3. **Install dependencies:**
@@ -37,25 +37,40 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
-## Usage
-
-1. Configuration: Modify the configuration file config.yaml to set your preferred detection and tracking algorithms, camera sources, and other parameters.
-2. Run the Application:
-
-```shell
-python run_tracker_simple.py
-```
-
 3. View Output: The application will display the video stream with bounding boxes around detected humans and tracking paths (if enabled).
 
-## Configuration
+## Getting Started
 
-The config.yaml file allows you to customize various aspects of the application, including:
+Please see [dataset.md](docs/dataset.md) and [quick_run.md](docs/quick_run.md) for the basic usage of MMTracking.
 
-- Detection model selection (e.g., YOLO, SSD, Faster R-CNN).
-- Tracking algorithm (e.g., Kalman filter, SORT, DeepSORT).
-- Video source (camera feed or video file).
-- Thresholds for detection confidence and tracking.
+[//]: # (## Performance)
+
+[//]: # (<div align="center">)
+
+[//]: # ()
+[//]: # (|  Tracker | HOTA↑ | MOTA↑ | IDF1↑ |)
+
+[//]: # (| -------- | ----- | ----- | ----- |)
+
+[//]: # (| [BoTSORT]&#40;https://arxiv.org/pdf/2206.14651.pdf&#41;    | 77.8 | 78.9 | 88.9 |)
+
+[//]: # (| [DeepOCSORT]&#40;https://arxiv.org/pdf/2302.11813.pdf&#41; | 77.4 | 78.4 | 89.0 |)
+
+[//]: # (| [OCSORT]&#40;https://arxiv.org/pdf/2203.14360.pdf&#41;     | 77.4 | 78.4 | 89.0 |)
+
+[//]: # (| [HybridSORT]&#40;https://arxiv.org/pdf/2308.00783.pdf&#41; | 77.3 | 77.9 | 88.8 |)
+
+[//]: # (| [ByteTrack]&#40;https://arxiv.org/pdf/2110.06864.pdf&#41;  | 75.6 | 74.6 | 86.0 |)
+
+[//]: # (| [StrongSORT]&#40;https://arxiv.org/pdf/2202.13514.pdf&#41; |      | | |)
+
+[//]: # (| <img width=200/>                                   | <img width=100/> | <img width=100/> | <img width=100/> |)
+
+[//]: # ()
+[//]: # (<sub> NOTES: performed on the 10 first frames of each MOT17 sequence. The detector used is ByteTrack's YoloXm, trained on: CrowdHuman, MOT17, Cityperson and ETHZ. Each tracker is configured with its original parameters found in their respective official repository.</sub>)
+
+[//]: # ()
+[//]: # (</div>)
 
 ## Contributing
 

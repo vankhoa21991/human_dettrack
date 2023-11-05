@@ -1,0 +1,15 @@
+#Verbose during prediction
+verbose: False
+
+img_size: 720
+epochs: 200
+batch_size: 8
+
+# for training
+mode: 'train'
+data: "/home/vankhoa/datasets/all_data/dataset.yaml"
+output: "yolov8n_mot_ch"
+model: weights/yolov8n.pt
+resume: False
+#model: "runs/detect/yolov8n_mot_ch/weights/last.pt"
+

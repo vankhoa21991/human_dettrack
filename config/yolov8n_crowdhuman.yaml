@@ -2,15 +2,14 @@
 verbose: False
 
 img_size: 640
-epochs: 50
-batch_size: 8
+epochs: 200
+batch_size: 16
 
 # for training
 mode: 'train' # 'train' or 'train resume'
 data: "/home/vankhoa/datasets/crowdhuman/yolo/dataset.yaml"
 output: "yolov8n_crowdhuman"
-model: weights/yolov8n.pt
-resume: False
+model: "runs/detect/yolo8n_mot_ch/weights/last.pt
+resume: True
 #model: "runs/detect/yolov8s_crowdhuman/weights/best.pt"
-#resume: "runs/detect/yolov8s_crowdhuman/weights/best.pt"
 

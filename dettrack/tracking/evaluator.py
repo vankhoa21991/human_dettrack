@@ -50,7 +50,7 @@ class Evaluator:
             # each sequences is present 3 times, one for each detector
             # (DPM, FRCNN, SDP). Keep only sequences from  one of them
             seq_paths = sorted([str(p / 'img1') for p in Path(mot_seqs_path).iterdir() if Path(p).is_dir()])
-            seq_paths = [[Path(p) for p in seq_paths if 'FRCNN' in p][0]]
+            seq_paths = [Path(p) for p in seq_paths if 'FRCNN' in p]
         elif opt.benchmark == 'MOT17-mini':
             mot_seqs_path = ROOT / 'assets' / self.opt.benchmark / self.opt.split
             gt_folder = ROOT / 'assets' / self.opt.benchmark / self.opt.split
@@ -254,4 +254,3 @@ class Evaluator:
         writer.add_scalar('IDF1', combined_results['IDF1'])
 
         return combined_results
-
