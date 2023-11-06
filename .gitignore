@@ -10,3 +10,4 @@ data
 runs
 __pycache__
 *.pt
+*.egg-info

@@ -77,6 +77,7 @@ class CocoToYoloCrowdHuman():
                 return img
     def make_filename(self, filename):
         return filename.split("/")[-1]
+
     def prepare_label(self, filename):
         if os.path.exists(f"{self.label_path}/{self.make_filename(filename).replace('jpg', 'txt')}"):
             return
