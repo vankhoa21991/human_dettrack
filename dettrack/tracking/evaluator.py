@@ -27,7 +27,7 @@ class Evaluator:
         Attributes:
             opt: the parsed script arguments
         """
-    def __init__(self, opts, num_threads=0):
+    def __init__(self, opts, num_threads=4):
         self.num_threads = num_threads
         self.opt = opts
 
