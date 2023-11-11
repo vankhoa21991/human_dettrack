@@ -11,6 +11,10 @@ from boxmot import TRACKERS
 from boxmot.tracker_zoo import create_tracker
 from boxmot.utils import ROOT
 from pathlib import Path
+from ultralytics.utils.plotting import Annotator, colors, save_one_box
+import numpy as np
+from copy import deepcopy
+import torch
 
 def on_predict_start(predictor, persist=False, args=None):
     """
@@ -90,14 +94,13 @@ def _display_detected_frames(conf, model, st_frame, image, is_display_tracking=N
 
     # Display object tracking, if specified
     if is_display_tracking:
-        model.add_callback('on_predict_start', partial(on_predict_start, persist=True, args={'tracking_method': tracker}))
-        res = model.track(image, conf=conf, persist=True)
+        res = model.track(image, conf=conf, persist=True, classes=[0])
     else:
         # Predict the objects in the image using the YOLOv8 model
         res = model.predict(image, conf=conf)
 
     # # Plot the detected objects on the video frame
-    res_plotted = res[0].plot()
+    res_plotted = res.plot()
     st_frame.image(res_plotted,
                    caption='Detected Video',
                    channels="BGR",
@@ -205,6 +208,7 @@ def play_webcam(conf, model):
     """
     source_webcam = settings.WEBCAM_PATH
     is_display_tracker, tracker = display_tracker_options()
+    model.add_callback('on_predict_start', partial(on_predict_start, persist=True, args={'tracking_method': tracker}))
     if st.sidebar.button('Detect Objects'):
         try:
             vid_cap = cv2.VideoCapture(source_webcam)
@@ -244,7 +248,14 @@ def play_stored_video(conf, model):
         "Choose a video...", settings.VIDEOS_DICT.keys())
 
     is_display_tracker, tracker = display_tracker_options()
-
+    results = model.track(
+        source=str(settings.VIDEOS_DICT.get(source_vid)),
+        conf=conf,
+        show=False,
+        stream=True,
+        classes=[0]
+    )
+    model.add_callback('on_predict_start', partial(on_predict_start, persist=True, args={'tracking_method': tracker}))
     with open(settings.VIDEOS_DICT.get(source_vid), 'rb') as video_file:
         video_bytes = video_file.read()
     if video_bytes:
@@ -252,21 +263,85 @@ def play_stored_video(conf, model):
 
     if st.sidebar.button('Detect Video Objects'):
         try:
-            vid_cap = cv2.VideoCapture(
-                str(settings.VIDEOS_DICT.get(source_vid)))
             st_frame = st.empty()
-            while (vid_cap.isOpened()):
-                success, image = vid_cap.read()
-                if success:
-                    _display_detected_frames(conf,
-                                             model,
-                                             st_frame,
-                                             image,
-                                             is_display_tracker,
-                                             tracker
-                                             )
-                else:
-                    vid_cap.release()
-                    break
+            for frame_idx, r in enumerate(results):
+                res_plotted = plot_res(r)
+                st_frame.image(res_plotted,
+                               caption='Detected Video',
+                               channels="BGR",
+                               use_column_width=True
+                               )
+                continue
         except Exception as e:
             st.sidebar.error("Error loading video: " + str(e))
+
+def plot_res(res, conf=True,
+            line_width=None,
+            font_size=None,
+            font='Arial.ttf',
+            pil=False,
+            img=None,
+            im_gpu=None,
+            kpt_radius=5,
+            kpt_line=True,
+            labels=True,
+            boxes=True,
+            masks=True,
+            probs=True,
+             **kwargs):
+
+    if img is None and isinstance(res.orig_img, torch.Tensor):
+        img = np.ascontiguousarray(res.orig_img[0].permute(1, 2, 0).cpu().detach().numpy()) * 255
+
+    # Deprecation warn TODO: remove in 8.2
+    if 'show_conf' in kwargs:
+        deprecation_warn('show_conf', 'conf')
+        conf = kwargs['show_conf']
+        assert type(conf) == bool, '`show_conf` should be of boolean type, i.e, show_conf=True/False'
+
+    if 'line_thickness' in kwargs:
+        deprecation_warn('line_thickness', 'line_width')
+        line_width = kwargs['line_thickness']
+        assert type(line_width) == int, '`line_width` should be of int type, i.e, line_width=3'
+
+    names = res.names
+    pred_boxes, show_boxes = res.boxes, boxes
+    pred_masks, show_masks = res.masks, masks
+    pred_probs, show_probs = res.probs, probs
+    annotator = Annotator(
+        deepcopy(res.orig_img if img is None else img),
+        line_width,
+        font_size,
+        font,
+        pil or (pred_probs is not None and show_probs),  # Classify tasks default to pil=True
+        example=names)
+
+    # Plot Segment results
+    if pred_masks and show_masks:
+        if im_gpu is None:
+            img = LetterBox(pred_masks.shape[1:])(image=annotator.result())
+            im_gpu = torch.as_tensor(img, dtype=torch.float16, device=pred_masks.data.device).permute(
+                2, 0, 1).flip(0).contiguous() / 255
+        idx = pred_boxes.cls if pred_boxes else range(len(pred_masks))
+        annotator.masks(pred_masks.data, colors=[colors(x, True) for x in idx], im_gpu=im_gpu)
+
+    # Plot Detect results
+    if pred_boxes and show_boxes:
+        for d in reversed(pred_boxes):
+            c, conf, id = int(d.cls), float(d.conf) if conf else None, None if d.id is None else int(d.id.item())
+            name = ('' if id is None else f'id:{id} ') + names[c]
+            label = (f'{name} {conf:.2f}' if conf else name) if labels else None
+            annotator.box_label(d.xyxy.squeeze(), label, color=colors(c, True))
+
+    # Plot Classify results
+    if pred_probs is not None and show_probs:
+        text = ',\n'.join(f'{names[j] if names else j} {pred_probs.data[j]:.2f}' for j in pred_probs.top5)
+        x = round(res.orig_shape[0] * 0.03)
+        annotator.text([x, x], text, txt_color=(255, 255, 255))  # TODO: allow setting colors
+
+    # Plot Pose results
+    if res.keypoints is not None:
+        for k in reversed(res.keypoints.data):
+            annotator.kpts(k, res.orig_shape, radius=kpt_radius, kpt_line=kpt_line)
+
+    return annotator.result()

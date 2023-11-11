@@ -6,6 +6,11 @@ from boxmot import TRACKERS
 from boxmot.tracker_zoo import create_tracker
 from boxmot.utils import ROOT
 from pathlib import Path
+from ultralytics.utils.plotting import Annotator, colors, save_one_box
+import numpy as np
+from copy import deepcopy
+import torch
+
 
 def on_predict_start(predictor, persist=False, args=None):
     """
@@ -57,11 +62,18 @@ def track_or_det(conf, model, image, is_display_tracking=None, tracker_args=None
     """
 
     # Resize the image to a standard size
-    image = cv2.resize(image, (size, int(size*9/16)))
+    # image = cv2.resize(image, (size, int(size*9/16)))
     # Display object tracking, if specified
     if is_display_tracking:
-        model.add_callback('on_predict_start', partial(on_predict_start, persist=True, args=tracker_args))
-        res = model.track(image, conf=conf, persist=True, show=True)
+
+        res = model.track(image, conf=conf,
+                          show=True,
+                          show_conf=True,
+                          stream=False,
+                          iou=0.7,
+                          imgsz=[640],
+                          vid_stride=1,
+                          line_width=None)
     else:
         # Predict the objects in the image using the YOLOv8 model
         res = model.predict(image, conf=conf)
@@ -71,12 +83,12 @@ def track_or_det(conf, model, image, is_display_tracking=None, tracker_args=None
 
 
 def main():
-    conf = 0.4
+    conf = 0.5
     tracker_args = {
         'half': False,
         'per_class': False,
         'tracking_method': 'ocsort',
-        'reid_model': Path('weights') / 'osnet_x0_25_msmt17.pt',
+        'reid_model': None,
         'device': '',
     }
 
@@ -84,8 +96,9 @@ def main():
     model = load_model(model_path)
 
     is_display_tracker, tracker = display_tracker_options()
+    model.add_callback('on_predict_start', partial(on_predict_start, persist=True, args=tracker_args))
     try:
-        vid_cap = cv2.VideoCapture(0)
+        vid_cap = cv2.VideoCapture('data/test2.mp4')
         st_frame = st.empty()
         while (vid_cap.isOpened()):
             success, image = vid_cap.read()
@@ -112,5 +125,34 @@ def main():
         vid_cap.release()
         raise e
 
+def main2():
+    conf = 0.5
+    tracker_args = {
+        'half': False,
+        'per_class': False,
+        'tracking_method': 'ocsort',
+        'reid_model': None,
+        'device': '',
+    }
+
+    model_path = 'runs/detect/yolov8n_mot_ch8/weights/best.pt'
+    model = load_model(model_path)
+
+    is_display_tracker, tracker = display_tracker_options()
+
+    results = model.track(
+        source='data/test2.mp4',
+        conf=conf,
+        show=True,
+        stream=True,
+    )
+    model.add_callback('on_predict_start', partial(on_predict_start, persist=True, args=tracker_args))
+
+    for frame_idx, r in enumerate(results):
+        res_plotted = plot_res(r)
+        continue
+
+
+
 if __name__=="__main__":
-    main()
+    main2()
