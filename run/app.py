@@ -26,12 +26,12 @@ def main():
 
     # Model Options
     model_type = st.sidebar.radio(
-        "Select Task", ['Detection'])
+        "Select Task", ['Detection/Tracking'])
 
     confidence = float(st.sidebar.slider(
         "Select Model Confidence", 25, 100, 40)) / 100
     print(settings)
-    if model_type == 'Detection':
+    if model_type == 'Detection/Tracking':
         model_path = Path(settings.DETECTION_MODEL)
 
     # Load Pre-trained ML Model
@@ -39,6 +39,7 @@ def main():
         model = helper.load_model(model_path)
     except Exception as ex:
         st.error(f"Unable to load model. Check the specified path: {model_path}")
+        print(model_path)
         st.error(ex)
 
     st.sidebar.header("Image/Video Config")
@@ -97,12 +98,12 @@ def main():
 
     elif source_radio == settings.WEBCAM:
         helper.play_webcam(confidence, model)
-
-    elif source_radio == settings.RTSP:
-        helper.play_rtsp_stream(confidence, model)
-
-    elif source_radio == settings.YOUTUBE:
-        helper.play_youtube_video(confidence, model)
+    #
+    # elif source_radio == settings.RTSP:
+    #     helper.play_rtsp_stream(confidence, model)
+    #
+    # elif source_radio == settings.YOUTUBE:
+    #     helper.play_youtube_video(confidence, model)
 
     else:
         st.error("Please select a valid source type!")

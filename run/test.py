@@ -41,7 +41,7 @@ def on_predict_start(predictor, persist=False, args=None):
 
     predictor.trackers = trackers
 
-def _display_detected_frames(conf, model, st_frame, image, is_display_tracking=None, tracker=None):
+def track_or_det(conf, model, image, is_display_tracking=None, tracker_args=None, size=720):
     """
     Display the detected objects on a video frame using the YOLOv8 model.
 
@@ -57,33 +57,29 @@ def _display_detected_frames(conf, model, st_frame, image, is_display_tracking=N
     """
 
     # Resize the image to a standard size
-    image = cv2.resize(image, (720, int(720)))
-
+    image = cv2.resize(image, (size, int(size*9/16)))
     # Display object tracking, if specified
     if is_display_tracking:
-        args = {
-            'half': False,
-            'per_class': False,
-            'tracking_method': 'ocsort',
-            'reid_model': Path('weights') / 'osnet_x0_25_msmt17.pt',
-            'device': '',
-        }
-        model.add_callback('on_predict_start', partial(on_predict_start, persist=True, args=args))
-        res = model.track(image, conf=conf, persist=True, tracker=tracker, show=True)
+        model.add_callback('on_predict_start', partial(on_predict_start, persist=True, args=tracker_args))
+        res = model.track(image, conf=conf, persist=True, show=True)
     else:
         # Predict the objects in the image using the YOLOv8 model
         res = model.predict(image, conf=conf)
 
-    # # Plot the detected objects on the video frame
-    res_plotted = res[0].plot()
-    st_frame.image(res_plotted,
-                   caption='Detected Video',
-                   channels="BGR",
-                   use_column_width=True
-                   )
+    return res
+
+
 
 def main():
     conf = 0.4
+    tracker_args = {
+        'half': False,
+        'per_class': False,
+        'tracking_method': 'ocsort',
+        'reid_model': Path('weights') / 'osnet_x0_25_msmt17.pt',
+        'device': '',
+    }
+
     model_path = 'runs/detect/yolov8n_mot_ch8/weights/best.pt'
     model = load_model(model_path)
 
@@ -94,13 +90,21 @@ def main():
         while (vid_cap.isOpened()):
             success, image = vid_cap.read()
             if success:
-                _display_detected_frames(conf,
+                res = track_or_det(conf,
                                          model,
-                                         st_frame,
                                          image,
                                          is_display_tracker,
-                                         tracker,
+                                         tracker_args,
                                          )
+
+                # # Plot the detected objects on the video frame
+                res_plotted = res[0].plot()
+                st_frame.image(res_plotted,
+                               caption='Detected Video',
+                               channels="BGR",
+                               use_column_width=True
+                               )
+
             else:
                 vid_cap.release()
                 break

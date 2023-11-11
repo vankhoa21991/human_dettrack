@@ -27,7 +27,8 @@ class Evaluator:
         Attributes:
             opt: the parsed script arguments
         """
-    def __init__(self, opts):
+    def __init__(self, opts, num_threads=0):
+        self.num_threads = num_threads
         self.opt = opts
 
     def eval_setup(self, opt):
@@ -89,48 +90,53 @@ class Evaluator:
         return free_devices
 
     def track(self, seq_paths, save_dir,free_devices):
-        processes = []
+        if self.num_threads > 0:
+            processes = []
 
-        busy_devices = []
+            busy_devices = []
 
-        for i, seq_path in enumerate(seq_paths):
-            # spawn one subprocess per GPU in increasing order.
-            # When max devices are reached start at 0 again
-            if i > 0 and len(free_devices) == 0:
-                if len(processes) == 0:
-                    raise IndexError("No active processes and no devices available.")
+            for i, seq_path in enumerate(seq_paths):
+                # spawn one subprocess per GPU in increasing order.
+                # When max devices are reached start at 0 again
+                if i > 0 and len(free_devices) == 0:
+                    if len(processes) == 0:
+                        raise IndexError("No active processes and no devices available.")
 
-                # Wait for oldest process to finish so we can get a free device
-                processes.pop(0).wait()
-                free_devices.append(busy_devices.pop(0))
+                    # Wait for oldest process to finish so we can get a free device
+                    processes.pop(0).wait()
+                    free_devices.append(busy_devices.pop(0))
 
-            tracking_subprocess_device = free_devices.pop(0)
-            busy_devices.append(tracking_subprocess_device)
+                tracking_subprocess_device = free_devices.pop(0)
+                busy_devices.append(tracking_subprocess_device)
 
-            LOGGER.info(f"Staring evaluation process on {seq_path}")
-            p = subprocess.Popen(
-                args=[
-                    sys.executable, str("run/track.py"),
-                    "--yolo-model", self.opt.yolo_model,
-                    "--reid-model", self.opt.reid_model,
-                    "--tracking-method", self.opt.tracking_method,
-                    "--conf", str(self.opt.conf),
-                    "--imgsz", str(self.opt.imgsz[0]),
-                    "--classes", *self.opt.classes,
-                    "--name", save_dir.name,
-                    "--save" if self.opt.save else ""
-                                                   "--save-mot",
-                    "--project", self.opt.project,
-                    "--device", str(tracking_subprocess_device),
-                    "--source", seq_path,
-                    "--exist-ok",
-                ],
-            )
-            processes.append(p)
-            # Wait for the subprocess to complete and capture output
+                LOGGER.info(f"Staring evaluation process on {seq_path}")
+                p = subprocess.Popen(
+                    args=[
+                        sys.executable, str("run/track.py"),
+                        "--yolo-model", self.opt.yolo_model,
+                        "--reid-model", self.opt.reid_model,
+                        "--tracking-method", self.opt.tracking_method,
+                        "--conf", str(self.opt.conf),
+                        "--imgsz", str(self.opt.imgsz[0]),
+                        "--classes", *self.opt.classes,
+                        "--name", save_dir.name,
+                        "--save" if self.opt.save else ""
+                                                       "--save-mot",
+                        "--project", self.opt.project,
+                        "--device", str(tracking_subprocess_device),
+                        "--source", seq_path,
+                        "--exist-ok",
+                    ],
+                )
+                processes.append(p)
+                # Wait for the subprocess to complete and capture output
 
-        for p in processes:
-            p.wait()
+            for p in processes:
+                p.wait()
+
+        else:
+            for i, seq_path in enumerate(seq_paths):
+                pass
 
         LOGGER.success("Evaluation succeeded")
 

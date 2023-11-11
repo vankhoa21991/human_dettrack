@@ -18,7 +18,7 @@ from ultralytics.utils.plotting import save_one_box
 from dettrack.utils.utils import write_mot_results
 
 
-def on_predict_start(predictor, persist=False):
+def on_predict_start(predictor, persist=False, args=None):
     """
     Initialize trackers for object tracking during prediction.
 
@@ -27,23 +27,23 @@ def on_predict_start(predictor, persist=False):
         persist (bool, optional): Whether to persist the trackers if they already exist. Defaults to False.
     """
 
-    assert predictor.custom_args.tracking_method in TRACKERS, \
-        f"'{predictor.custom_args.tracking_method}' is not supported. Supported ones are {TRACKERS}"
+    assert args.tracking_method in TRACKERS, \
+        f"'{args.tracking_method}' is not supported. Supported ones are {TRACKERS}"
 
     tracking_config = \
         ROOT /\
         'boxmot' /\
         'configs' /\
-        (predictor.custom_args.tracking_method + '.yaml')
+        (args.tracking_method + '.yaml')
     trackers = []
     for i in range(predictor.dataset.bs):
         tracker = create_tracker(
-            predictor.custom_args.tracking_method,
+            args.tracking_method,
             tracking_config,
-            predictor.custom_args.reid_model,
+            args.reid_model,
             predictor.device,
-            predictor.custom_args.half,
-            predictor.custom_args.per_class
+            args.half,
+            args.per_class
         )
         # motion only modeles do not have
         if hasattr(tracker, 'model'):
@@ -52,13 +52,41 @@ def on_predict_start(predictor, persist=False):
 
     predictor.trackers = trackers
 
+def save_logs(model, args, r, frame_idx):
+    if r.boxes.data.shape[1] == 7:
+
+        if model.predictor.source_type.webcam or args.source.endswith(VID_FORMATS):
+            p = model.predictor.save_dir / 'mot' / (args.source + '.txt')
+            model.predictor.mot_txt_path = p
+        elif 'MOT16' or 'MOT17' or 'MOT20' in args.source:
+            p = model.predictor.save_dir / 'mot' / (Path(args.source).parent.name + '.txt')
+            model.predictor.mot_txt_path = p
+
+        if args.save_mot:
+            write_mot_results(
+                model.predictor.mot_txt_path,
+                r,
+                frame_idx,
+            )
+
+        if args.save_id_crops:
+            for d in r.boxes:
+                print('args.save_id_crops', d.data)
+                save_one_box(
+                    d.xyxy,
+                    r.orig_img.copy(),
+                    file=(
+                            model.predictor.save_dir / 'crops' /
+                            str(int(d.cls.cpu().numpy().item())) /
+                            str(int(d.id.cpu().numpy().item())) / f'{frame_idx}.jpg'
+                    ),
+                    BGR=True
+                )
 
 @torch.no_grad()
 def run(args):
 
-    yolo = YOLO(
-        args.yolo_model if 'yolov8' in str(args.yolo_model) else 'yolov8n.pt',
-    )
+    yolo = YOLO(args.yolo_model)
 
     results = yolo.track(
         source=args.source,
@@ -78,10 +106,11 @@ def run(args):
         classes=args.classes,
         imgsz=args.imgsz,
         vid_stride=args.vid_stride,
-        line_width=args.line_width
+        line_width=args.line_width,
+
     )
 
-    yolo.add_callback('on_predict_start', partial(on_predict_start, persist=True))
+    yolo.add_callback('on_predict_start', partial(on_predict_start, persist=True, args=args))
 
     if 'yolov8' not in str(args.yolo_model):
         # replace yolov8 model
@@ -93,43 +122,11 @@ def run(args):
         )
         yolo.predictor.model = model
 
-    # store custom args in predictor
-    yolo.predictor.custom_args = args
-
     for frame_idx, r in enumerate(results):
+        save_logs(yolo, args, r, frame_idx)
 
-        if r.boxes.data.shape[1] == 7:
 
-            if yolo.predictor.source_type.webcam or args.source.endswith(VID_FORMATS):
-                p = yolo.predictor.save_dir / 'mot' / (args.source + '.txt')
-                yolo.predictor.mot_txt_path = p
-            elif 'MOT16' or 'MOT17' or 'MOT20' in args.source:
-                p = yolo.predictor.save_dir / 'mot' / (Path(args.source).parent.name + '.txt')
-                yolo.predictor.mot_txt_path = p
 
-            if args.save_mot:
-                write_mot_results(
-                    yolo.predictor.mot_txt_path,
-                    r,
-                    frame_idx,
-                )
-
-            if args.save_id_crops:
-                for d in r.boxes:
-                    print('args.save_id_crops', d.data)
-                    save_one_box(
-                        d.xyxy,
-                        r.orig_img.copy(),
-                        file=(
-                            yolo.predictor.save_dir / 'crops' /
-                            str(int(d.cls.cpu().numpy().item())) /
-                            str(int(d.id.cpu().numpy().item())) / f'{frame_idx}.jpg'
-                        ),
-                        BGR=True
-                    )
-
-    if args.save_mot:
-        print(f'MOT results saved to {yolo.predictor.mot_txt_path}')
 
 
 def parse_opt():

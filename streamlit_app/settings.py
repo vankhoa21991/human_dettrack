@@ -21,7 +21,7 @@ WEBCAM = 'Webcam'
 RTSP = 'RTSP'
 YOUTUBE = 'YouTube'
 
-SOURCES_LIST = [IMAGE, VIDEO, WEBCAM, RTSP, YOUTUBE]
+SOURCES_LIST = [IMAGE, VIDEO, WEBCAM]
 
 # Images config
 IMAGES_DIR = ROOT / 'data'
@@ -29,19 +29,15 @@ DEFAULT_IMAGE = IMAGES_DIR / 'test2.jpg'
 DEFAULT_DETECT_IMAGE = IMAGES_DIR / 'test2_pred.jpg'
 
 # Videos config
-VIDEO_DIR = ROOT / 'videos'
-VIDEO_1_PATH = VIDEO_DIR / 'video_1.mp4'
-VIDEO_2_PATH = VIDEO_DIR / 'video_2.mp4'
-VIDEO_3_PATH = VIDEO_DIR / 'video_3.mp4'
+VIDEO_DIR = ROOT / 'data'
+VIDEO_1_PATH = VIDEO_DIR / 'test2.mp4'
 VIDEOS_DICT = {
     'video_1': VIDEO_1_PATH,
-    'video_2': VIDEO_2_PATH,
-    'video_3': VIDEO_3_PATH,
 }
 
 # ML Model config
-MODEL_DIR = ROOT / 'weights'
-DETECTION_MODEL = MODEL_DIR / 'yolov8n.pt'
+MODEL_DIR = ROOT / 'runs'
+DETECTION_MODEL = MODEL_DIR / 'detect' / 'yolov8n_mot_ch8' / 'weights' / 'best.pt'
 
 # Webcam
 WEBCAM_PATH = 0
