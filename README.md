@@ -41,7 +41,7 @@ pip install -r requirements.txt
 
 ## Getting Started
 
-Please see [dataset.md](docs/dataset.md) and [quick_run.md](docs/quick_run.md) for the basic usage of MMTracking.
+Please see [dataset.md](docs/dataset.md) and [quick_run.md](docs/quick_run.md) for the basic usage.
 
 [//]: # (## Performance)
 
