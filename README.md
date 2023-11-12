@@ -1,6 +1,6 @@
 # Human Detection and Tracking Project
 
-![Human Detection and Tracking](data/image.png)
+![Human Detection and Tracking](data/test2_pred.jpg)
 
 ## Overview
 

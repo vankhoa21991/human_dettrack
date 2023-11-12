@@ -79,7 +79,7 @@ def main():
             else:
                 if st.sidebar.button('Detect Objects'):
                     res = model.predict(uploaded_image,
-                                        conf=confidence
+                                        conf=confidence, classes=[0]
                                         )
                     boxes = res[0].boxes
                     res_plotted = res[0].plot()[:, :, ::-1]

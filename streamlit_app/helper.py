@@ -206,27 +206,46 @@ def play_webcam(conf, model):
     Raises:
         None
     """
-    source_webcam = settings.WEBCAM_PATH
+
     is_display_tracker, tracker = display_tracker_options()
+    results = model.track(
+        source=settings.WEBCAM_PATH,
+        conf=conf,
+        show=False,
+        stream=True,
+        classes=[0]
+    )
     model.add_callback('on_predict_start', partial(on_predict_start, persist=True, args={'tracking_method': tracker}))
     if st.sidebar.button('Detect Objects'):
         try:
-            vid_cap = cv2.VideoCapture(source_webcam)
+            # vid_cap = cv2.VideoCapture(settings.WEBCAM_PATH)
+            # st_frame = st.empty()
+            # while (vid_cap.isOpened()):
+            #     success, image = vid_cap.read()
+            #     if success:
+            #         _display_detected_frames(conf,
+            #                                  model,
+            #                                  st_frame,
+            #                                  image,
+            #                                  is_display_tracker,
+            #                                  tracker,
+            #                                  )
+            #     else:
+            #         vid_cap.release()
+            #         break
+
             st_frame = st.empty()
-            while (vid_cap.isOpened()):
-                success, image = vid_cap.read()
-                if success:
-                    _display_detected_frames(conf,
-                                             model,
-                                             st_frame,
-                                             image,
-                                             is_display_tracker,
-                                             tracker,
-                                             )
-                else:
-                    vid_cap.release()
-                    break
+            for frame_idx, r in enumerate(results):
+                res_plotted = plot_res(r)
+                st_frame.image(res_plotted,
+                               caption='Detected Video',
+                               channels="BGR",
+                               use_column_width=True
+                               )
+
+
         except Exception as e:
+            # vid_cap.release()
             st.sidebar.error("Error loading video: " + str(e))
 
 
@@ -293,17 +312,6 @@ def plot_res(res, conf=True,
     if img is None and isinstance(res.orig_img, torch.Tensor):
         img = np.ascontiguousarray(res.orig_img[0].permute(1, 2, 0).cpu().detach().numpy()) * 255
 
-    # Deprecation warn TODO: remove in 8.2
-    if 'show_conf' in kwargs:
-        deprecation_warn('show_conf', 'conf')
-        conf = kwargs['show_conf']
-        assert type(conf) == bool, '`show_conf` should be of boolean type, i.e, show_conf=True/False'
-
-    if 'line_thickness' in kwargs:
-        deprecation_warn('line_thickness', 'line_width')
-        line_width = kwargs['line_thickness']
-        assert type(line_width) == int, '`line_width` should be of int type, i.e, line_width=3'
-
     names = res.names
     pred_boxes, show_boxes = res.boxes, boxes
     pred_masks, show_masks = res.masks, masks
@@ -315,15 +323,6 @@ def plot_res(res, conf=True,
         font,
         pil or (pred_probs is not None and show_probs),  # Classify tasks default to pil=True
         example=names)
-
-    # Plot Segment results
-    if pred_masks and show_masks:
-        if im_gpu is None:
-            img = LetterBox(pred_masks.shape[1:])(image=annotator.result())
-            im_gpu = torch.as_tensor(img, dtype=torch.float16, device=pred_masks.data.device).permute(
-                2, 0, 1).flip(0).contiguous() / 255
-        idx = pred_boxes.cls if pred_boxes else range(len(pred_masks))
-        annotator.masks(pred_masks.data, colors=[colors(x, True) for x in idx], im_gpu=im_gpu)
 
     # Plot Detect results
     if pred_boxes and show_boxes:
