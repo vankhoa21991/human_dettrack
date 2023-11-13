@@ -16,28 +16,13 @@ This personal project focuses on human detection and tracking using computer vis
 
 ## Installation
 
-1. **Clone the repository:**
-
 ```shell
  git clone https://github.com/vankhoa21991/human-dettrack.git
  cd human_dettrack
+ python -m venv venv
+ source venv/bin/activate 
+ pip install -r requirements.txt
 ```
-
-4. **Create a virtual environment (optional but recommended):**
-
-```shell
-python -m venv venv
-source venv/bin/activate 
-```
-
-3. **Install dependencies:**
-
-```shell
-python -m venv venv
-pip install -r requirements.txt
-```
-
-3. View Output: The application will display the video stream with bounding boxes around detected humans and tracking paths (if enabled).
 
 ## Getting Started
 

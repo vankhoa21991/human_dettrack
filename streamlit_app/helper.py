@@ -74,40 +74,6 @@ def display_tracker_options():
     return is_display_tracker, None
 
 
-def _display_detected_frames(conf, model, st_frame, image, is_display_tracking=None, tracker=None):
-    """
-    Display the detected objects on a video frame using the YOLOv8 model.
-
-    Args:
-    - conf (float): Confidence threshold for object detection.
-    - model (YoloV8): A YOLOv8 object detection model.
-    - st_frame (Streamlit object): A Streamlit object to display the detected video.
-    - image (numpy array): A numpy array representing the video frame.
-    - is_display_tracking (bool): A flag indicating whether to display object tracking (default=None).
-
-    Returns:
-    None
-    """
-
-    # Resize the image to a standard size
-    image = cv2.resize(image, (720, int(720*(9/16))))
-
-    # Display object tracking, if specified
-    if is_display_tracking:
-        res = model.track(image, conf=conf, persist=True, classes=[0])
-    else:
-        # Predict the objects in the image using the YOLOv8 model
-        res = model.predict(image, conf=conf)
-
-    # # Plot the detected objects on the video frame
-    res_plotted = res.plot()
-    st_frame.image(res_plotted,
-                   caption='Detected Video',
-                   channels="BGR",
-                   use_column_width=True
-                   )
-
-
 # def play_youtube_video(conf, model):
 #     """
 #     Plays a webcam stream. Detects Objects in real-time using the YOLOv8 object detection model.
@@ -208,32 +174,25 @@ def play_webcam(conf, model):
     """
 
     is_display_tracker, tracker = display_tracker_options()
-    results = model.track(
-        source=settings.WEBCAM_PATH,
-        conf=conf,
-        show=False,
-        stream=True,
-        classes=[0]
-    )
-    model.add_callback('on_predict_start', partial(on_predict_start, persist=True, args={'tracking_method': tracker}))
+    if is_display_tracker:
+        results = model.track(
+            source=settings.WEBCAM_PATH,
+            conf=conf,
+            show=False,
+            stream=True,
+            classes=[0]
+        )
+        model.add_callback('on_predict_start', partial(on_predict_start, persist=True, args={'tracking_method': tracker}))
+    else:
+        results = model(
+            source=settings.WEBCAM_PATH,
+            conf=conf,
+            show=False,
+            stream=True,
+            classes=[0])
+
     if st.sidebar.button('Detect Objects'):
         try:
-            # vid_cap = cv2.VideoCapture(settings.WEBCAM_PATH)
-            # st_frame = st.empty()
-            # while (vid_cap.isOpened()):
-            #     success, image = vid_cap.read()
-            #     if success:
-            #         _display_detected_frames(conf,
-            #                                  model,
-            #                                  st_frame,
-            #                                  image,
-            #                                  is_display_tracker,
-            #                                  tracker,
-            #                                  )
-            #     else:
-            #         vid_cap.release()
-            #         break
-
             st_frame = st.empty()
             for frame_idx, r in enumerate(results):
                 res_plotted = plot_res(r)
@@ -245,7 +204,6 @@ def play_webcam(conf, model):
 
 
         except Exception as e:
-            # vid_cap.release()
             st.sidebar.error("Error loading video: " + str(e))
 
 
@@ -267,14 +225,25 @@ def play_stored_video(conf, model):
         "Choose a video...", settings.VIDEOS_DICT.keys())
 
     is_display_tracker, tracker = display_tracker_options()
-    results = model.track(
+
+    if is_display_tracker:
+        results = model.track(
         source=str(settings.VIDEOS_DICT.get(source_vid)),
         conf=conf,
         show=False,
         stream=True,
         classes=[0]
     )
-    model.add_callback('on_predict_start', partial(on_predict_start, persist=True, args={'tracking_method': tracker}))
+        model.add_callback('on_predict_start',
+                           partial(on_predict_start, persist=True, args={'tracking_method': tracker}))
+    else:
+        results = model(
+            source=str(settings.VIDEOS_DICT.get(source_vid)),
+            conf=conf,
+            show=False,
+            stream=True,
+            classes=[0])
+
     with open(settings.VIDEOS_DICT.get(source_vid), 'rb') as video_file:
         video_bytes = video_file.read()
     if video_bytes:
@@ -290,7 +259,6 @@ def play_stored_video(conf, model):
                                channels="BGR",
                                use_column_width=True
                                )
-                continue
         except Exception as e:
             st.sidebar.error("Error loading video: " + str(e))
 

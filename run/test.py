@@ -1,5 +1,5 @@
 import cv2
-from streamlit_app.helper import load_model, display_tracker_options, _display_detected_frames
+from streamlit_app.helper import load_model, display_tracker_options, plot_res
 import streamlit as st
 from functools import partial
 from boxmot import TRACKERS
@@ -10,7 +10,8 @@ from ultralytics.utils.plotting import Annotator, colors, save_one_box
 import numpy as np
 from copy import deepcopy
 import torch
-
+from ultralytics import YOLO
+import math
 
 def on_predict_start(predictor, persist=False, args=None):
     """
@@ -143,16 +144,79 @@ def main2():
     results = model.track(
         source='data/test2.mp4',
         conf=conf,
-        show=True,
+        # show=True,
         stream=True,
+        classes=[0],
+        imgsz=[720]
     )
     model.add_callback('on_predict_start', partial(on_predict_start, persist=True, args=tracker_args))
 
     for frame_idx, r in enumerate(results):
         res_plotted = plot_res(r)
-        continue
+        cv2.imshow('Webcam', res_plotted)
+        if cv2.waitKey(1) == ord('q'):
+            break
 
+def main3():
+    conf = 0.5
+    model_path = 'runs/detect/yolov8n_mot_ch8/weights/best.pt'
+    model = load_model(model_path)
 
+    cap = cv2.VideoCapture(0)  # WEBCAM
+    while True:
+        success, img = cap.read()
+        img = cv2.resize(img, (720, int(720*9/16)))
+        results = model(img, stream=True, conf=conf)
+
+        # coordinates
+        for r in results:
+            boxes = r.boxes
+
+            for box in boxes:
+                # bounding box
+                x1, y1, x2, y2 = box.xyxy[0]
+                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)  # convert to int values
+
+                # put box in cam
+                cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
+
+                # confidence
+                confidence = math.ceil((box.conf[0] * 100)) / 100
+                print("Confidence --->", confidence)
+
+                # object details
+                org = [x1, y1]
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontScale = 1
+                color = (255, 0, 0)
+                thickness = 2
+
+                cv2.putText(img, f'person:{confidence}', org, font, fontScale, color, thickness)
+
+        cv2.imshow('Webcam', img)
+        if cv2.waitKey(1) == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+def main4():
+    conf = 0.5
+    model_path = 'weights/yolov8n.pt'
+    model = YOLO(model_path)
+
+    results = model(source='data/test2.mp4',
+                    conf=conf,
+                    # show=True,
+                    stream=True,
+                    classes=[0],
+                    imgsz=[720],)
+
+    for frame_idx, r in enumerate(results):
+        res_plotted = plot_res(r)
+        cv2.imshow('Webcam', res_plotted)
+        if cv2.waitKey(1) == ord('q'):
+            break
 
 if __name__=="__main__":
     main2()
